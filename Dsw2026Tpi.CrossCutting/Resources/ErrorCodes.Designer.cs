@@ -86,7 +86,18 @@ namespace Dsw2026Tpi.CrossCutting.Resources {
                 return ResourceManager.GetString("ENTITY_NOTFOUND", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to Datos de login de paciente no válidos.
+        /// </summary>
+        public static string PATIENT_LOGIN_INVALID
+        {
+            get
+            {
+                return ResourceManager.GetString("PATIENT_LOGIN_INVALID", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Se produjo un error al registrar el usuario.
         /// </summary>
