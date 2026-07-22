@@ -5,9 +5,16 @@ namespace Dsw2026Tpi.CrossCutting.Helpers;
 public static class ValidationsExtensions
 {
     public const string EmailPattern = @"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$";
+
     public static bool IsEmailValid(this string? email)
     {
         return !string.IsNullOrWhiteSpace(email) &&
             Regex.IsMatch(email, EmailPattern);
+    }
+
+    public static bool IsDniValid(this long dni)
+    {
+        var length = dni.ToString().Length;
+        return dni > 0 && length is 7 or 8;
     }
 }
