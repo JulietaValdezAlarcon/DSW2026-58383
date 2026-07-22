@@ -34,6 +34,13 @@ public class Program
 
             var app = builder.Build();
 
+            using (var scope = app.Services.CreateScope())
+            {
+                await AdminSeed.SeedAsync(
+                    scope.ServiceProvider,
+                    builder.Configuration);
+            }
+
             app.UseSerilogRequestLogging();
 
             if (app.Environment.IsProduction())
