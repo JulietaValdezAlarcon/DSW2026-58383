@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Dsw2026Tpi.Domain.Entities
+namespace Dsw2026Tpi.Domain.Entities;
+
+public enum AvailabilityStatus
 {
-    internal class AvailabilityStatus
-    {
-    }
+    Available = 1,
+    Booked = 2,
+    Blocked = 3
 }
