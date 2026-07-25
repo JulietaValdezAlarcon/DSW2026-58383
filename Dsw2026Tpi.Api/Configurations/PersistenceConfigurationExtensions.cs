@@ -31,7 +31,8 @@ public static class PersistenceConfigurationExtensions
                 var authContext = (AuthenticationDbContext)c;
 
                 authContext.Seedwork<IdentityRole>("Sources\\roles.json");
-                authContext.SeedAdminUser(configuration);
+
+                //authContext.SeedAdminUser(configuration);
             });
         });
 
