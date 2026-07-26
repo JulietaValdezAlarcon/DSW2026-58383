@@ -33,12 +33,12 @@ public class AppointmentService : IAppointmentService
         var patient = patients.FirstOrDefault();
     
 
-        var slot = await _persistence.GetFiltered<Turn>(t => t.AvailabilityId == availability.Id && t.Status == TurnStatus.Available);
+        var slot = await _persistence.GetFiltered<Turn>(t => t.AvailabilityId == availability.Id && t.Status == TurnStatus.NO_SHOW);
         if (slot == null || !slot.Any()) throw new EntityNotFoundException("Slot Not Available");
         var turn = new Turn();
         foreach (var s in slot)
         {
-            if (s.Status != TurnStatus.Available)
+            if (s.Status != TurnStatus.NO_SHOW)
             {
                 throw new EntityNotFoundException("Slot Not Available");
             }
@@ -46,7 +46,7 @@ public class AppointmentService : IAppointmentService
         }
 
         var appointment = new Appointment(patient.Id, availability.Date);
-        turn.Status = TurnStatus.Reserved;
+        turn.Status = TurnStatus.BOOKED;
 
         await _persistence.Add(appointment);
         await _persistence.Update(turn);
