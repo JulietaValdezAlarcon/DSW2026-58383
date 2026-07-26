@@ -6,7 +6,8 @@ namespace Dsw2026Tpi.Domain.Entities;
 
 public enum TurnStatus
 {
-    Available,
-    Reserved,
-    Blocked
+    BOOKED,
+    CANCELLED,
+    ATTENDED,
+    NO_SHOW
 }
