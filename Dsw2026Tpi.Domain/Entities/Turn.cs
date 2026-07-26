@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Dsw2026Tpi.Domain.Entities;
 
-public class Turn
+public class Turn : EntityBase
 {
     public DateOnly Date { get; set; }
     public DateTime StartTime { get; set; }

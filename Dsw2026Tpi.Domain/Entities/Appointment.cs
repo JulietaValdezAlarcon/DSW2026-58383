@@ -6,9 +6,15 @@ namespace Dsw2026Tpi.Domain.Entities;
 
 public class Appointment : EntityBase
 {
-    public DateOnly DateOfService { get; set; }
+    public DateOnly DateOfService { get; init; }
     public DateOnly? CancellationDate { get; set; }
     public Guid PatientId { get; set; }
-    public AppointmentStatus Status { get; set; }
+    public AppointmentStatus Status { get; set; } = AppointmentStatus.Confirmed;
+
+    public Appointment (Guid patientId, DateOnly dateOfService)
+    {
+        PatientId = patientId;
+        DateOfService = dateOfService;
+    }
 
 }
