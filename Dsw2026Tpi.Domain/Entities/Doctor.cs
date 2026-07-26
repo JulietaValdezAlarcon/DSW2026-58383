@@ -7,6 +7,7 @@ public class Doctor: EntityBase
     public bool IsActive { get; private set; }
     public Guid? SpecialityId { get; set; }
     public Speciality? Speciality { get; private set; }
+    public List<Availability> Availabilities { get; private set; } = new List<Availability>();
 
     #region Constructor for EF
 #pragma warning disable CS8618
