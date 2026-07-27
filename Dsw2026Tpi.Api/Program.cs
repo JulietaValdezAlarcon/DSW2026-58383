@@ -31,8 +31,16 @@ public class Program
             builder.Services.AddAppDependencies();
             builder.Services.AddControllers();
             builder.Services.AddHealthChecks();
+            builder.Services.AddAppRateLimiting();
 
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                await AdminSeed.SeedAsync(
+                    scope.ServiceProvider,
+                    builder.Configuration);
+            }
 
             app.UseSerilogRequestLogging();
 
@@ -45,7 +53,7 @@ public class Program
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
+            app.UseRateLimiter();
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseCors();

@@ -232,6 +232,9 @@ namespace Dsw2026Tpi.Data.Migrations.Identity
                     b.Property<bool>("Deleted")
                         .HasColumnType("bit");
 
+                    b.Property<long?>("Dni")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 

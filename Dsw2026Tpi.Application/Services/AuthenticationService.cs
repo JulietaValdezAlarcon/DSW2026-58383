@@ -53,9 +53,54 @@ public class AuthenticationService : IAuthenticationService
         );
     }
 
-    public async Task<LoginPatientModel.Response> LoginPatient(LoginPatientModel.Response request)
+    public async Task<LoginPatientModel.Response> LoginPatient(LoginPatientModel.Request request)
     {
-        throw new NotImplementedException();
+        if (!request.Email.IsEmailValid())
+            throw new ValidationException(nameof(ErrorCodes.PATIENT_LOGIN_INVALID), ErrorCodes.PATIENT_LOGIN_INVALID)
+                .WithDetail("email", "formato inválido");
+
+        if (!request.Dni.IsDniValid())
+            throw new ValidationException(nameof(ErrorCodes.PATIENT_LOGIN_INVALID), ErrorCodes.PATIENT_LOGIN_INVALID)
+                .WithDetail("dni", "debe tener 7 u 8 dígitos");
+
+        var user = await _userManager.FindByEmailAsync(request.Email);
+
+        if (user is null)
+        {
+            // RN06 - primer acceso: registración automática del paciente
+            user = new ApplicationUser
+            {
+                UserName = request.Email,
+                Email = request.Email,
+                Dni = request.Dni,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            var randomPassword = $"{Guid.NewGuid():N}Aa1!";
+            var createResult = await _userManager.CreateAsync(user, randomPassword);
+
+            if (!createResult.Succeeded)
+                throw new ConflictException(nameof(ErrorCodes.REGISTER_USER_CONFLICT), ErrorCodes.REGISTER_USER_CONFLICT)
+                    .WithDetail(createResult.Errors.Select(e => (e.Code, e.Description)));
+
+            if (await _roleManager.FindByNameAsync(Roles.Patient) is null)
+                await _roleManager.CreateAsync(new IdentityRole(Roles.Patient));
+
+            await _userManager.AddToRoleAsync(user, Roles.Patient);
+
+            _logger.LogInformation("Paciente registrado automáticamente: {Email}", request.Email);
+        }
+        else if (user.Dni != request.Dni)
+        {
+            _logger.LogError("Intento de login fallido para paciente: {Email}", request.Email);
+            throw new AuthenticationException();
+        }
+
+        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault();
+        var token = _jwtService.GenerateToken(user.UserName!, role);
+
+        return new LoginPatientModel.Response(token, role);
     }
 
     public async Task<RegisterModel.Response> Register(RegisterModel.Request request)
@@ -83,4 +128,5 @@ public class AuthenticationService : IAuthenticationService
 
         return new RegisterModel.Response(request.Email);
     }
+    
 }
