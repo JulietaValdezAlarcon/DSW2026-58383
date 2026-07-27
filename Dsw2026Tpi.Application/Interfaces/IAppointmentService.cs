@@ -8,4 +8,6 @@ namespace Dsw2026Tpi.Application.Interfaces;
 public interface IAppointmentService
 {
     Task<AppointmentDto.Response> CreateAppointment(AppointmentDto.Request appointmentDto);   
+    Task<List<AppointmentDto.Response>> GetAppointmentByDni(int dni);
+    Task DeleteAppointment(Guid id);
 }

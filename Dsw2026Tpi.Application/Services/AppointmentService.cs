@@ -28,11 +28,9 @@ public class AppointmentService : IAppointmentService
         var availability = await _persistence.GetById<Availability>(appointmentDto.availability);
         if (availability == null) throw new EntityNotFoundException("Availability Not Found");
 
-        var patients = await _persistence.GetFiltered<Patient>(p => p.DNI == appointmentDto.Patient.Dni);
-        if (patients == null || !patients.Any()) throw new EntityNotFoundException("Patient Not Found");
-        var patient = patients.FirstOrDefault();
+        var patient = await _persistence.First<Patient>(p => p.DNI == appointmentDto.Patient.Dni);
+        if (patient == null) throw new EntityNotFoundException("Patient Not Found");
     
-
         var slot = await _persistence.GetFiltered<Turn>(t => t.AvailabilityId == availability.Id && t.Status == TurnStatus.NO_SHOW);
         if (slot == null || !slot.Any()) throw new EntityNotFoundException("Slot Not Available");
         var turn = new Turn();
@@ -52,6 +50,61 @@ public class AppointmentService : IAppointmentService
         await _persistence.Update(turn);
 
         return new AppointmentDto.Response(patient.Id, availability.Date);
+    }
+
+    public async Task<List<AppointmentDto.Response>> GetAppointmentByDni(int dni)
+    {
+        var patient = await _persistence.First<Patient>(p => p.DNI == dni);
+        if (patient == null) throw new EntityNotFoundException("Patient Not Found");
+
+        var appointments = patient.appointments ?? new List<Appointment>();
+        List<Turn>? turns = new List<Turn>();
+        foreach (var appointment in appointments)
+        {
+           var turn = await _persistence.GetById<Turn>(appointment.TurnId);
+           turns.Add(turn);
+        }
+        return appointments
+            .Where(a => a.Status == AppointmentStatus.Confirmed)
+            .Where(a => turns.Any(t => t.Id == a.TurnId && t.Status == TurnStatus.BOOKED))
+            .Select(a => new AppointmentDto.Response(patient.Id, a.DateOfService))
+            .ToList();
+    }
+
+    public async Task DeleteAppointment(Guid id)
+    {
+        var appointment = await _persistence.GetById<Appointment>(id);
+        var turn = await _persistence.GetById<Turn>(appointment.TurnId);
+        switch (appointment?.Status)
+        {
+            case AppointmentStatus.Confirmed:
+                switch (turn?.Status)
+                {
+                    case TurnStatus.BOOKED:
+                        turn.Status = TurnStatus.CANCELLED;
+                        await _persistence.Update(turn);
+                        break;
+                    case TurnStatus.NO_SHOW:
+                        throw new InvalidOperationException("Turn is already marked as no-show.");
+                    case TurnStatus.CANCELLED:
+                        throw new InvalidOperationException("Turn is already cancelled.");
+                    case TurnStatus.ATTENDED:
+                        throw new InvalidOperationException("Cannot delete an appointment for an attended turn.");
+                    default:
+                        throw new EntityNotFoundException("Turn Not Found");
+                }
+                appointment.Status = AppointmentStatus.Cancelled;
+                await _persistence.Update(appointment);
+                break;
+            case AppointmentStatus.Cancelled:
+                throw new InvalidOperationException("Appointment is already cancelled.");
+            case AppointmentStatus.Completed:
+                throw new InvalidOperationException("Cannot delete a completed appointment.");
+            default:
+                throw new EntityNotFoundException("Appointment Not Found");
+        }
+        
+        await _persistence.Update(appointment);
     }
 }
 

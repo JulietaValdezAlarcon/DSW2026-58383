@@ -8,7 +8,7 @@ public class Patient : EntityBase
 {
     public int DNI { get; set; }
     public string? Name { get; set; }
-    public int TelephoneNumber { get; set; }
+    public Double TelephoneNumber { get; set; }
     public List<Appointment>? appointments { get; set; }
 
 }

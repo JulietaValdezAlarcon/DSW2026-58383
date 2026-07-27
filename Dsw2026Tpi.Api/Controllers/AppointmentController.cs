@@ -21,4 +21,20 @@ public class AppointmentController : AppController
         var result = await _service.CreateAppointment(appointmentDto);
         return Ok(result);
     }
+
+    [HttpGet("{dni}")]
+    public async Task<IActionResult> GetAppointmentByDni([FromRoute] int dni)
+    {
+        var result = await _service.GetAppointmentByDni(dni);
+        return Ok(result);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAppointment([FromRoute] Guid id)
+    {
+        // Implement the logic to delete an appointment by its ID
+        // For example, you can call a method in the service layer to perform the deletion
+        await _service.DeleteAppointment(id);
+        return NoContent();
+    }
 }
