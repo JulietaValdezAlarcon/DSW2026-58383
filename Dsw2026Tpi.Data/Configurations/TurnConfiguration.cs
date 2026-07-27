@@ -23,6 +23,9 @@ public class TurnConfiguration : IEntityTypeConfiguration<Turn>
         builder.Property(t => t.Status)
             .HasConversion<int>();
 
+        builder.Property(t => t.RowVersion)
+            .IsRowVersion();
+
         builder.HasOne<Appointment>()
             .WithMany()
             .HasForeignKey(t => t.AppointmentId)
