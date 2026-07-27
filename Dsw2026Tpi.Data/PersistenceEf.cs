@@ -21,6 +21,23 @@ public class PersistenceEf: IPersistence
         return entity;
     }
 
+    public async Task AddRange<T>(IEnumerable<T> entities)
+    where T : EntityBase
+    {
+        await _context.Set<T>().AddRangeAsync(entities);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ReplaceRange<T>(
+        IEnumerable<T> currentEntities,
+        IEnumerable<T> newEntities)
+        where T : EntityBase
+    {
+        _context.Set<T>().RemoveRange(currentEntities);
+        await _context.Set<T>().AddRangeAsync(newEntities);
+        await _context.SaveChangesAsync();
+    }
+
     public async Task<T> Delete<T>(T entity) where T : EntityBase
     {
         var a = entity.Id;
