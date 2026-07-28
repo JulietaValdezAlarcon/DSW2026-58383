@@ -8,8 +8,8 @@ namespace Dsw2026Tpi.Application.Interfaces;
 
 public interface IAvailabilityService
 {
-    Task<IReadOnlyCollection<AvailabilityModel.Response>> GetByDoctor(
-        Guid doctorId);
+    Task<IReadOnlyCollection<AvailabilityModel.Response>>
+        GetByDoctor(Guid doctorId);
 
     Task Create(AvailabilityModel.Request request);
 

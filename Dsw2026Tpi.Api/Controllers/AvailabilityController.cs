@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Dsw2026Tpi.Api.Controllers;
 
+[Route("availabilities")]
 [Authorize]
 public class AvailabilityController : AppController
 {
@@ -18,7 +19,7 @@ public class AvailabilityController : AppController
     }
 
     //Nota: Los símbolos ~/ hacen que ASP.NET Core utilice las rutas exactas indicadas
-    [HttpGet("~/api/doctors/{doctorId:guid}/availabilities")] 
+    [HttpGet("~/api/doctors/{doctorId:guid}/availabilities")]
     [ProducesResponseType(
         typeof(IReadOnlyCollection<AvailabilityModel.Response>),
         StatusCodes.Status200OK)]

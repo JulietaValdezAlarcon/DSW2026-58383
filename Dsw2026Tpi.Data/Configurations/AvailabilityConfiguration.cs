@@ -41,7 +41,7 @@ public class AvailabilityConfiguration
             .IsRequired();
 
         builder.HasOne(availability => availability.Doctor)
-            .WithMany()
+            .WithMany(doctor => doctor.Availabilities)
             .HasForeignKey(availability => availability.DoctorId)
             .OnDelete(DeleteBehavior.Restrict);
 

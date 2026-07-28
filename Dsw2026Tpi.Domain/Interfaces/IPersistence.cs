@@ -17,4 +17,5 @@ public interface IPersistence
 
     Task ReplaceRange<T>(IEnumerable<T> currentEntities, IEnumerable<T> newEntities) where T : EntityBase;
     Task<Pagination<T>> Paginate<T, TKey>(int pageSize, int pageIndex, Expression<Func<T, bool>> predicate, Expression<Func<T, TKey>> sortOrder, params string[] includes) where T : EntityBase;
+
 }

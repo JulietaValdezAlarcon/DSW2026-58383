@@ -8,7 +8,7 @@ public record AvailabilityModel
 {
     public record Request(
         Guid DoctorId,
-        List<DayRequest> Days);
+        IReadOnlyCollection<DayRequest> Days);
 
     public record DayRequest(
         string Day,
