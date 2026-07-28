@@ -2,6 +2,8 @@
 using Dsw2026Tpi.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Dsw2026Tpi.Data;
 
@@ -19,23 +21,6 @@ public class PersistenceEf: IPersistence
         await _context.AddAsync(entity);
         await _context.SaveChangesAsync();
         return entity;
-    }
-
-    public async Task AddRange<T>(IEnumerable<T> entities)
-    where T : EntityBase
-    {
-        await _context.Set<T>().AddRangeAsync(entities);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task ReplaceRange<T>(
-        IEnumerable<T> currentEntities,
-        IEnumerable<T> newEntities)
-        where T : EntityBase
-    {
-        _context.Set<T>().RemoveRange(currentEntities);
-        await _context.Set<T>().AddRangeAsync(newEntities);
-        await _context.SaveChangesAsync();
     }
 
     public async Task<T> Delete<T>(T entity) where T : EntityBase
@@ -72,7 +57,44 @@ public class PersistenceEf: IPersistence
         await _context.SaveChangesAsync();
         return entity;
     }
+    //-----
+    public async Task AddRange<T>(
+    IEnumerable<T> entities)
+    where T : EntityBase
+    {
+        var entityList = entities.ToList();
 
+        if (entityList.Count == 0)
+        {
+            return;
+        }
+
+        await _context.Set<T>().AddRangeAsync(entityList);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ReplaceRange<T>(
+        IEnumerable<T> currentEntities,
+        IEnumerable<T> newEntities)
+        where T : EntityBase
+    {
+        var currentList = currentEntities.ToList();
+        var newList = newEntities.ToList();
+
+        if (currentList.Count > 0)
+        {
+            _context.Set<T>().RemoveRange(currentList);
+        }
+
+        if (newList.Count > 0)
+        {
+            await _context.Set<T>().AddRangeAsync(newList);
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    //-----
     public async Task<Pagination<T>> Paginate<T, TKey>(int pageSize, int pageIndex, Expression<Func<T, bool>> predicate, Expression<Func<T, TKey>> sortOrder, params string[] includes) where T : EntityBase
     {
         pageSize = Math.Abs(pageSize);
@@ -94,13 +116,13 @@ public class PersistenceEf: IPersistence
             return new Pagination<T>(pageSize, pageIndex, total, data);
         }
         
-        //la pagina existe
+        //la pag existe
         if (total > pageSize * pageIndex)
         {
             return await GetPage(pageIndex * pageSize, pageSize);
         }
 
-        //solo hay una pagina
+        //solo hay una pag
         if (total < pageSize)
         {
             return new Pagination<T>(pageSize, pageIndex, total, await filtered.ToListAsync());

@@ -8,26 +8,34 @@ namespace Dsw2026Tpi.Api.Configurations;
 
 public static class PersistenceConfigurationExtensions
 {
-    public static IServiceCollection AddApplicationPersistence(this IServiceCollection services,
+    public static IServiceCollection AddApplicationPersistence(
+        this IServiceCollection services,
         IConfiguration configuration)
     {
-        //Obtener cadena de conexión desde appsettings.json
+        // Obtener cadena de conexión desde appsettings.json
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-        //Agregar contexto (O/RM) y utilizar SQL Server para DB
+        // Contexto de la aplicación
         services.AddDbContext<Dsw2026TpiDbContext>(options =>
         {
             options.UseSqlServer(connectionString);
         });
 
+        // Contexto de Identity
         services.AddDbContext<AuthenticationDbContext>(options =>
         {
             options.UseSqlServer(connectionString);
+
             options.UseSeeding((c, t) =>
             {
-                c.Seedwork<IdentityRole>("Sources\\roles.json");
+                var authContext = (AuthenticationDbContext)c;
+
+                authContext.Seedwork<IdentityRole>("Sources\\roles.json");
+
+                //authContext.SeedAdminUser(configuration);
             });
         });
+
         return services;
     }
 }

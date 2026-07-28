@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Dsw2026Tpi.Api.Controllers;
 
-[Route("doctors")]
+[Route("specialties")]
 [Authorize(Policy = Policies.AdminPolicy)]
-public class DoctorController : AppController
+public class SpecialityController : AppController
 {
-    private readonly IDoctorService _service;
+    private readonly ISpecialityService _service;
 
-    public DoctorController(IDoctorService service)
+    public SpecialityController(ISpecialityService service)
     {
         _service = service;
     }
@@ -24,12 +24,12 @@ public class DoctorController : AppController
         [FromQuery] int pageIndex,
         [FromQuery] string? name = null)
     {
-        var doctors = await _service.GetAll(
+        var specialities = await _service.GetAll(
             pageSize,
             pageIndex,
             name);
 
-        return Ok(doctors);
+        return Ok(specialities);
     }
 
     [HttpGet("{id:guid}")]
@@ -37,23 +37,23 @@ public class DoctorController : AppController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var doctor = await _service.GetById(id);
+        var speciality = await _service.GetById(id);
 
-        return Ok(doctor);
+        return Ok(speciality);
     }
 
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
-        [FromBody] DoctorModel.Request request)
+        [FromBody] SpecialityModel.Request request)
     {
-        var doctor = await _service.Create(request);
+        var speciality = await _service.Create(request);
 
         return CreatedAtAction(
             nameof(GetById),
-            new { id = doctor.Id },
-            doctor);
+            new { id = speciality.Id },
+            speciality);
     }
 
     [HttpPut("{id:guid}")]
@@ -62,11 +62,11 @@ public class DoctorController : AppController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         Guid id,
-        [FromBody] DoctorModel.Request request)
+        [FromBody] SpecialityModel.Request request)
     {
-        var doctor = await _service.Update(id, request);
+        var speciality = await _service.Update(id, request);
 
-        return Ok(doctor);
+        return Ok(speciality);
     }
 
     [HttpDelete("{id:guid}")]

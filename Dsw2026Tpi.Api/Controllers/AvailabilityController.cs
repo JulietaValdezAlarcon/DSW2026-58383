@@ -10,49 +10,62 @@ namespace Dsw2026Tpi.Api.Controllers;
 [Authorize]
 public class AvailabilityController : AppController
 {
-    private readonly IAvailabilityService _service;
+    private readonly IAvailabilityService _availabilityService;
 
-    public AvailabilityController(IAvailabilityService service)
+    public AvailabilityController(
+        IAvailabilityService availabilityService)
     {
-        _service = service;
+        _availabilityService = availabilityService;
     }
 
-    [HttpGet("/api/doctors/{doctorId:guid}/availabilities")]
+    //Nota: Los símbolos ~/ hacen que ASP.NET Core utilice las rutas exactas indicadas
+    [HttpGet("~/api/doctors/{doctorId:guid}/availabilities")]
     [ProducesResponseType(
         typeof(IReadOnlyCollection<AvailabilityModel.Response>),
         StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByDoctor(Guid doctorId)
+    public async Task<
+        ActionResult<IReadOnlyCollection<AvailabilityModel.Response>>>
+        GetByDoctor(Guid doctorId)
     {
-        var availabilities = await _service.GetByDoctor(doctorId);
+        var availability =
+            await _availabilityService.GetByDoctor(doctorId);
 
-        return Ok(availabilities);
+        return Ok(availability);
     }
 
-    [HttpPost]
+    [HttpPost("~/api/availabilities")]
     [Authorize(Policy = Policies.AdminPolicy)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         [FromBody] AvailabilityModel.Request request)
     {
-        await _service.Create(request);
+        await _availabilityService.Create(request);
 
-        return Created(
-            $"/api/doctors/{request.DoctorId}/availabilities",
-            null);
+        return CreatedAtAction(
+            nameof(GetByDoctor),
+            new { doctorId = request.DoctorId },
+            value: null);
     }
 
-    [HttpPut]
+    [HttpPut("~/api/availabilities")]
     [Authorize(Policy = Policies.AdminPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(
         [FromBody] AvailabilityModel.Request request)
     {
-        await _service.Update(request);
+        await _availabilityService.Update(request);
 
         return NoContent();
     }
