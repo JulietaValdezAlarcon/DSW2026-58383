@@ -94,6 +94,22 @@ public class PersistenceEf: IPersistence
         await _context.SaveChangesAsync();
     }
 
+    public async Task ExecuteInTransaction(Func<Task> operation)
+    {
+        // Use a transaction to ensure atomicity of multiple operations
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            await operation();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
     //-----
     public async Task<Pagination<T>> Paginate<T, TKey>(int pageSize, int pageIndex, Expression<Func<T, bool>> predicate, Expression<Func<T, TKey>> sortOrder, params string[] includes) where T : EntityBase
     {
