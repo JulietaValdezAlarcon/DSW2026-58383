@@ -6,9 +6,10 @@ Acceso al [documento](https://frtutneduar-my.sharepoint.com/:b:/g/personal/franc
 
 ## Integrantes
 
-Agostini, Antonio Amado Salim - 50611
-Malica, Gino Alejandro - 50296
-Melani Jazmin Barrionuevo - 53122
+
+##Agostini, Antonio Amado Salim - 50611
+##Malica, Gino Alejandro - 50296
+##Melani Jazmin Barrionuevo - 53122
 
 
 Instrucciones:
