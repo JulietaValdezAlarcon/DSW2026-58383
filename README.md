@@ -10,6 +10,7 @@ Acceso al [documento](https://frtutneduar-my.sharepoint.com/:b:/g/personal/franc
 Agostini, Antonio Amado Salim - 50611
 Malica, Gino Alejandro - 50296
 Melani Jazmin Barrionuevo - 53122
+Valdez Alarcón Julieta - 58383
 
 
 Instrucciones:
