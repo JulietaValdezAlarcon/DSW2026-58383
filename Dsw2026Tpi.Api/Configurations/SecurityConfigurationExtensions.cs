@@ -29,6 +29,7 @@ public static class SecurityConfigurationExtensions
         })
             .AddJwtBearer(options =>
             {
+                options.MapInboundClaims = false;
                 //Definir parámetros para la generación del token
                 options.TokenValidationParameters = new TokenValidationParameters
                 {

@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Dsw2026Tpi.Data.Migrations.Identity
+namespace Dsw2026Tpi.Data.Migrations.AuthenticationDb
 {
     [DbContext(typeof(AuthenticationDbContext))]
-    [Migration("20260722054553_AddDniToApplicationUser")]
-    partial class AddDniToApplicationUser
+    [Migration("20260803214602_InitialIdentity")]
+    partial class InitialIdentity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -17,6 +17,7 @@ public class Availability : EntityBase
     public TimeOnly EndTime { get; private set; }
 
     public AvailabilityStatus Status { get; private set; }
+    public List<Turn> Turns { get; private set; } = new List<Turn>();
 
     #region Constructor for EF
 

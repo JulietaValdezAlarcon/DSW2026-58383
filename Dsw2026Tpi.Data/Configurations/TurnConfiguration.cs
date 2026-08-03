@@ -1,36 +1,46 @@
-using Dsw2026Tpi.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Dsw2026Tpi.Domain.Entities;
 
-namespace Dsw2026Tpi.Data.Configurations;
-
-public class TurnConfiguration : IEntityTypeConfiguration<Turn>
+namespace Dsw2026Tpi.Data.Configurations
 {
-    public void Configure(EntityTypeBuilder<Turn> builder)
+    public class TurnConfiguration : IEntityTypeConfiguration<Turn>
     {
-        builder.ToTable("Turns");
-        builder.HasKey(t => t.Id);
+        public void Configure(EntityTypeBuilder<Turn> builder)
+        {
+            builder.ToTable("Turns");
+            builder.HasKey(t => t.Id);
 
-        builder.Property(t => t.Date)
-            .HasColumnType("date");
+            builder.Property(t => t.Date)
+                .IsRequired();
 
-        builder.Property(t => t.StartTime)
-            .HasColumnType("datetime2");
+            builder.Property(t => t.StartTime)
+                .IsRequired();
 
-        builder.Property(t => t.EndTime)
-            .HasColumnType("datetime2");
+            builder.Property(t => t.EndTime)
+                .IsRequired();
 
-        builder.Property(t => t.Status)
-            .HasConversion<int>();
+            builder.Property(t => t.Status)
+                .IsRequired();
 
-        builder.Property(t => t.RowVersion)
-            .IsRowVersion();
+            // Configuración vital para la concurrencia optimista en SQL Server
+            builder.Property(t => t.RowVersion)
+                .IsRowVersion();
 
-        builder.HasOne<Appointment>()
-            .WithMany()
-            .HasForeignKey(t => t.AppointmentId)
-            .OnDelete(DeleteBehavior.SetNull);
+            // Relación con Availability
+            builder.HasOne<Availability>()
+                .WithMany(a => a.Turns)
+                .HasForeignKey(t => t.AvailabilityId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(t => new { t.AvailabilityId, t.Status });
+            // Relación opcional con Appointment
+            builder.HasOne(t => t.Appointment)
+                .WithOne(a => a.Turn)
+                .HasForeignKey<Appointment>(a => a.TurnId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Índice para optimizar búsquedas por disponibilidad y estado
+            builder.HasIndex(t => new { t.AvailabilityId, t.Status });
+        }
     }
 }

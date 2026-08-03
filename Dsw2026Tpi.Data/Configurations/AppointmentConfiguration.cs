@@ -1,28 +1,34 @@
-using Dsw2026Tpi.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Dsw2026Tpi.Domain.Entities;
 
-namespace Dsw2026Tpi.Data.Configurations;
-
-public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
+namespace Dsw2026Tpi.Data.Configurations // O el namespace que uses para configuraciones
 {
-    public void Configure(EntityTypeBuilder<Appointment> builder)
+    public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
     {
-        builder.ToTable("Appointments");
-        builder.HasKey(a => a.Id);
+        public void Configure(EntityTypeBuilder<Appointment> builder)
+        {
+            builder.ToTable("Appointments");
 
-        builder.Property(a => a.DateOfService)
-            .HasColumnType("date");
+            builder.HasKey(a => a.Id);
 
-        builder.Property(a => a.CancellationDate)
-            .HasColumnType("date");
+            builder.Property(a => a.DateOfService)
+                .IsRequired();
 
-        builder.Property(a => a.Status)
-            .HasConversion<int>();
+            builder.Property(a => a.Status)
+                .IsRequired();
 
-        builder.HasOne<Patient>()
-            .WithMany(p => p.appointments)
-            .HasForeignKey(a => a.PatientId)
-            .OnDelete(DeleteBehavior.Cascade);
+            // Relación con Patient
+            builder.HasOne(a => a.Patient)
+                .WithMany(p => p.Appointments) // Asegúrate de que Patient tenga esta colección
+                .HasForeignKey(a => a.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relación con Turn
+            builder.HasOne(a => a.Turn)
+                .WithMany() // O WithOne dependiendo de cómo lo maneje Turn
+                .HasForeignKey(a => a.TurnId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
     }
 }

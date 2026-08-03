@@ -1,14 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace Dsw2026Tpi.Domain.Entities;
-
-public class Patient : EntityBase
+namespace Dsw2026Tpi.Domain.Entities
 {
-    public int DNI { get; set; }
-    public string? Name { get; set; }
-    public Double TelephoneNumber { get; set; }
-    public List<Appointment>? appointments { get; set; }
+    public class Patient : EntityBase
+    {
+        public int DNI { get; set; }
+        public string? Name { get; set; }
+        public double TelephoneNumber { get; set; }
 
+        // Colección de citas inicializada
+        public List<Appointment> Appointments { get; set; } = new();
+
+        // Constructor vacío requerido por EF Core
+        protected Patient() { }
+
+        public Patient(int dni, string? name, double telephoneNumber, Guid? id = null) : base(id)
+        {
+            DNI = dni;
+            Name = name;
+            TelephoneNumber = telephoneNumber;
+        }
+    }
 }

@@ -25,12 +25,17 @@ public class JwtService
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expiresIn = int.Parse(jwtConfig["ExpiresInMinutes"] ?? "60");
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, username),
-            new Claim(ClaimTypes.Name, username),
-            new Claim(ClaimTypes.Role, role ?? string.Empty)
+            new Claim(ClaimTypes.Name, username)
         };
+
+        // ⬇️ Solo agregamos el claim si el rol realmente existe y no está vacío
+        if (!string.IsNullOrEmpty(role))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken(
             issuer: issuer,
@@ -38,7 +43,7 @@ public class JwtService
             claims: claims,
             expires: DateTime.Now.AddMinutes(expiresIn),
             signingCredentials: creds
-            );
+        );
 
         var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 

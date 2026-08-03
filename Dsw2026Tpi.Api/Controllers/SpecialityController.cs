@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Dsw2026Tpi.Api.Controllers;
 
 [Route("specialties")]
-[Authorize(Policy = Policies.AdminPolicy)]
+[Authorize]
+//(Policy = Policies.AdminPolicy)
 public class SpecialityController : AppController
 {
     private readonly ISpecialityService _service;
