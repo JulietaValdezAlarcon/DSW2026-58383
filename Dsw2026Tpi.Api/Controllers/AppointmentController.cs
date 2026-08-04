@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-[Route("api/appointments")] // Asegurar prefijo /api si no lo maneja AppController
-[Authorize]
+[ApiController]
+[Route("api/appointments")]
 public class AppointmentController : AppController
 {
     private readonly IAppointmentService _service;
@@ -18,15 +18,20 @@ public class AppointmentController : AppController
 
     [HttpPost]
     [EnableRateLimiting("AppointmentPolicy")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateAppointment([FromBody] AppointmentDto.Request appointmentDto)
     {
         var result = await _service.CreateAppointment(appointmentDto);
-        return Created("", result); // Cambiado a 201 Created según buenas prácticas REST
+        return Created("", result);
     }
 
-    // Corregido según TPI: GET /api/appointments/patient?dni=number
     [HttpGet("patient")]
     [EnableRateLimiting("GeneralPolicy")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAppointmentByDni([FromQuery] int dni)
     {
         var result = await _service.GetAppointmentByDni(dni);
@@ -35,32 +40,35 @@ public class AppointmentController : AppController
 
     [HttpDelete("{id}")]
     [EnableRateLimiting("GeneralPolicy")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAppointment([FromRoute] Guid id)
     {
         await _service.DeleteAppointment(id);
-        return Ok("ok"); // Corregido según TPI: Retorna HTTP 200 con el texto "ok"
+        return Ok("ok");
     }
 
-    // Corregido según TPI: GET /api/appointments?date=YYYY-MM-DD
     [HttpGet]
     [EnableRateLimiting("GeneralPolicy")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAppointmentsByDate([FromQuery] DateOnly? date, [FromQuery] int pageSize = 10, [FromQuery] int pageIndex = 0)
     {
-        if (date.HasValue)
+        if (!date.HasValue)
         {
-            var result = await _service.GetTurnsByDay(date.Value, pageSize, pageIndex);
-            return Ok(result);
+            throw new ArgumentException("La fecha es obligatoria para este endpoint.");
         }
 
-        // Si no mandan fecha, podrías derivarlo a la búsqueda general o retornar vacío
-        return BadRequest("La fecha es obligatoria para este endpoint.");
+        var result = await _service.GetTurnsByDay(date.Value, pageSize, pageIndex);
+        return Ok(result);
     }
 
     [HttpGet("search")]
     [EnableRateLimiting("GeneralPolicy")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SearchAppointments([FromQuery] Guid? specialtyId, [FromQuery] Guid? doctorId, [FromQuery] int? dni, [FromQuery] DateOnly? date, [FromQuery] int pageSize = 10, [FromQuery] int pageIndex = 0)
     {
-        // Asegúrate de usar el servicio que devuelve la estructura anidada de Citas (SearchAppointments)
         var result = await _service.SearchTurns(specialtyId, doctorId, dni, date, pageSize, pageIndex);
         return Ok(result);
     }

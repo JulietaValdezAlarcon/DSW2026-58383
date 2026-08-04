@@ -41,6 +41,8 @@ public class Program
                     scope.ServiceProvider,
                     builder.Configuration);
             }
+           
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             app.UseSerilogRequestLogging();
 
@@ -57,7 +59,6 @@ public class Program
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseCors();
-            app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             app.MapControllers();
             app.MapHealthChecks("/health-check");

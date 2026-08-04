@@ -22,7 +22,7 @@ public class Availability : EntityBase
     #region Constructor for EF
 
 #pragma warning disable CS8618
-    private Availability()
+    public Availability()
     {
     }
 #pragma warning restore CS8618

@@ -20,7 +20,7 @@ namespace Dsw2026Tpi.Domain.Entities
         public byte[]? RowVersion { get; set; }
 
         // Constructor requerido por EF Core
-        protected Turn() { }
+        public Turn() { }
 
         public Turn(Guid availabilityId, DateOnly date, DateTime startTime, DateTime endTime, Guid? id = null) : base(id)
         {

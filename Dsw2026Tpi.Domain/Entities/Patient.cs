@@ -13,7 +13,7 @@ namespace Dsw2026Tpi.Domain.Entities
         public List<Appointment> Appointments { get; set; } = new();
 
         // Constructor vacío requerido por EF Core
-        protected Patient() { }
+        public Patient() { }
 
         public Patient(int dni, string? name, double telephoneNumber, Guid? id = null) : base(id)
         {

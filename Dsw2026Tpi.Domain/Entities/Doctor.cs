@@ -11,7 +11,7 @@ public class Doctor : EntityBase
 
     #region Constructor for EF
 #pragma warning disable CS8618
-    private Doctor()
+    public Doctor()
     {
     }
 #pragma warning restore CS8618
