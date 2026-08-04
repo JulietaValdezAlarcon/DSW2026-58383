@@ -31,7 +31,7 @@ public class Program
             builder.Services.AddAppDependencies();
             builder.Services.AddControllers();
             builder.Services.AddHealthChecks();
-            builder.Services.AddAppRateLimiting();
+            builder.Services.AddAppRateLimiting(builder.Configuration);
 
             var app = builder.Build();
 

@@ -1,11 +1,12 @@
-﻿using Dsw2026Tpi.Application.Dtos;
+﻿using Dsw2026Tpi.Api.Controllers;
+using Dsw2026Tpi.Application.Dtos;
 using Dsw2026Tpi.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
-namespace Dsw2026Tpi.Api.Controllers;
-
-[Route("appointments")]
+[Route("api/appointments")] // Asegurar prefijo /api si no lo maneja AppController
+[Authorize]
 public class AppointmentController : AppController
 {
     private readonly IAppointmentService _service;
@@ -16,46 +17,50 @@ public class AppointmentController : AppController
     }
 
     [HttpPost]
+    [EnableRateLimiting("AppointmentPolicy")]
     public async Task<IActionResult> CreateAppointment([FromBody] AppointmentDto.Request appointmentDto)
     {
-        // No-op: placeholder to keep API signature stable after DTO change
         var result = await _service.CreateAppointment(appointmentDto);
-        return Ok(result);
+        return Created("", result); // Cambiado a 201 Created según buenas prácticas REST
     }
 
-    [HttpGet("by-dni/{dni}")]
-    public async Task<IActionResult> GetAppointmentByDni([FromRoute] int dni)
+    // Corregido según TPI: GET /api/appointments/patient?dni=number
+    [HttpGet("patient")]
+    [EnableRateLimiting("GeneralPolicy")]
+    public async Task<IActionResult> GetAppointmentByDni([FromQuery] int dni)
     {
         var result = await _service.GetAppointmentByDni(dni);
         return Ok(result);
     }
 
     [HttpDelete("{id}")]
+    [EnableRateLimiting("GeneralPolicy")]
     public async Task<IActionResult> DeleteAppointment([FromRoute] Guid id)
     {
-        // Implement the logic to delete an appointment by its ID
-        // For example, you can call a method in the service layer to perform the deletion
         await _service.DeleteAppointment(id);
-        return NoContent();
+        return Ok("ok"); // Corregido según TPI: Retorna HTTP 200 con el texto "ok"
     }
 
-    [HttpGet("by-date/{dateOfService}/{pageSize?}/{pageIndex?}")]
-    public async Task<IActionResult> GetAppointmentsByDate([FromRoute] DateOnly dateOfService, int pageSize = 10, int pageIndex = 0)
+    // Corregido según TPI: GET /api/appointments?date=YYYY-MM-DD
+    [HttpGet]
+    [EnableRateLimiting("GeneralPolicy")]
+    public async Task<IActionResult> GetAppointmentsByDate([FromQuery] DateOnly? date, [FromQuery] int pageSize = 10, [FromQuery] int pageIndex = 0)
     {
-        var result = await _service.GetTurnsByDay(dateOfService, pageSize, pageIndex);
-        return Ok(result);
-    }
+        if (date.HasValue)
+        {
+            var result = await _service.GetTurnsByDay(date.Value, pageSize, pageIndex);
+            return Ok(result);
+        }
 
-    [HttpGet("available/by-date/{dateOfService}/{pageSize?}/{pageIndex?}")]
-    public async Task<IActionResult> GetAvailableTurnsByDate([FromRoute] DateOnly dateOfService, int pageSize = 10, int pageIndex = 0)
-    {
-        var result = await _service.GetAvailableTurnsByDay(dateOfService, pageSize, pageIndex);
-        return Ok(result);
+        // Si no mandan fecha, podrías derivarlo a la búsqueda general o retornar vacío
+        return BadRequest("La fecha es obligatoria para este endpoint.");
     }
 
     [HttpGet("search")]
+    [EnableRateLimiting("GeneralPolicy")]
     public async Task<IActionResult> SearchAppointments([FromQuery] Guid? specialtyId, [FromQuery] Guid? doctorId, [FromQuery] int? dni, [FromQuery] DateOnly? date, [FromQuery] int pageSize = 10, [FromQuery] int pageIndex = 0)
     {
+        // Asegúrate de usar el servicio que devuelve la estructura anidada de Citas (SearchAppointments)
         var result = await _service.SearchTurns(specialtyId, doctorId, dni, date, pageSize, pageIndex);
         return Ok(result);
     }

@@ -104,21 +104,4 @@ public static class SecurityConfigurationExtensions
           .AddDefaultTokenProviders();
         return services;
     }
-    public static IServiceCollection AddAppRateLimiting(this IServiceCollection services)
-    {
-        services.AddRateLimiter(options =>
-        {
-            options.AddFixedWindowLimiter("LoginPolicy", limiterOptions =>
-            {
-                limiterOptions.PermitLimit = 5;
-                limiterOptions.Window = TimeSpan.FromMinutes(1);
-                limiterOptions.QueueLimit = 0;
-                limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-            });
-
-            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-        });
-
-        return services;
-    }
 }

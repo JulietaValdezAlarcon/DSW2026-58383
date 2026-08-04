@@ -25,7 +25,7 @@ public class AuthenticationController : AppController
     }
 
     [HttpPost("admin/login")]
-    [EnableRateLimiting("LoginPolicy")]
+    [EnableRateLimiting("AdminLoginPolicy")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Login([FromBody] LoginAdminModel.Request request)
@@ -35,7 +35,7 @@ public class AuthenticationController : AppController
     }
 
     [HttpPost("patient/login")]
-    [EnableRateLimiting("LoginPolicy")]
+    [EnableRateLimiting("PatientLoginPolicy")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> LoginPatient([FromBody] LoginPatientModel.Request request)
