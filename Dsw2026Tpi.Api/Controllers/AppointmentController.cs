@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 [ApiController]
 [Route("api/appointments")]
+[Authorize]
 public class AppointmentController : AppController
 {
     private readonly IAppointmentService _service;
