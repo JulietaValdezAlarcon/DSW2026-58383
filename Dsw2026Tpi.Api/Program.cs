@@ -31,7 +31,7 @@ public class Program
             builder.Services.AddAppDependencies();
             builder.Services.AddControllers();
             builder.Services.AddHealthChecks();
-            builder.Services.AddAppRateLimiting();
+            builder.Services.AddAppRateLimiting(builder.Configuration);
 
             var app = builder.Build();
 
@@ -41,6 +41,8 @@ public class Program
                     scope.ServiceProvider,
                     builder.Configuration);
             }
+           
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             app.UseSerilogRequestLogging();
 
@@ -57,7 +59,6 @@ public class Program
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseCors();
-            app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             app.MapControllers();
             app.MapHealthChecks("/health-check");

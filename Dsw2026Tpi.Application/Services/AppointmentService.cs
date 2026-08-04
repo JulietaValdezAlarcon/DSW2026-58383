@@ -194,8 +194,15 @@ public class AppointmentService : IAppointmentService
         return new Pagination<AppointmentDto.TurnRow>(pageSize, pageIndex, total, pageData);
     }
 
-    public async Task<Pagination<AppointmentDto.TurnRow>> SearchTurns(Guid? specialtyId = null, Guid? doctorId = null, int? dni = null, DateOnly? date = null, int pageSize = 10, int pageIndex = 0)
+    public async Task<Pagination<AppointmentDto.TurnRow>> SearchTurns(
+       Guid? specialtyId = null,
+       Guid? doctorId = null,
+       int? dni = null,
+       DateOnly? date = null,
+       int pageSize = 10,
+       int pageIndex = 0)
     {
+        // 1. Obtener disponibilidades por fecha o todas
         IEnumerable<Availability>? availabilities;
         if (date.HasValue)
         {
@@ -206,73 +213,75 @@ public class AppointmentService : IAppointmentService
             availabilities = await _persistence.GetAll<Availability>();
         }
 
-        if (availabilities == null || !availabilities.Any()) return Pagination<AppointmentDto.TurnRow>.Empty;
+        if (availabilities == null || !availabilities.Any())
+            return Pagination<AppointmentDto.TurnRow>.Empty;
 
-        // Filtrar por doctor si se pasó por parámetro
+        // 2. Filtrar por DoctorId si viene en la query
         if (doctorId.HasValue)
         {
             availabilities = availabilities.Where(a => a.DoctorId == doctorId.Value).ToList();
         }
 
-        var availabilityIds = availabilities.Select(a => a.Id).ToList();
         var doctorIds = availabilities.Select(a => a.DoctorId).Distinct().ToList();
-
         var doctors = await _persistence.GetFiltered<Doctor>(d => doctorIds.Contains(d.Id), "Speciality");
 
-        // Filtrar por especialidad si se pasó por parámetro
+        // 3. Filtrar por SpecialtyId si viene en la query
         if (specialtyId.HasValue && doctors != null)
         {
             var validDoctorIds = doctors.Where(d => d.SpecialityId == specialtyId.Value).Select(d => d.Id).ToHashSet();
             availabilities = availabilities.Where(a => validDoctorIds.Contains(a.DoctorId)).ToList();
-            availabilityIds = availabilities.Select(a => a.Id).ToList();
         }
 
-        if (!availabilities.Any()) return Pagination<AppointmentDto.TurnRow>.Empty;
+        if (!availabilities.Any())
+            return Pagination<AppointmentDto.TurnRow>.Empty;
 
-        HashSet<Guid>? patientAppointmentIds = null;
+        var availabilityIds = availabilities.Select(a => a.Id).ToList();
+
+        // 4. Si se pasa un DNI, validamos al paciente
         if (dni.HasValue)
         {
             var patient = await _persistence.First<Patient>(p => p.DNI == dni.Value);
-            if (patient == null) return Pagination<AppointmentDto.TurnRow>.Empty;
-            var appointments = await _persistence.GetFiltered<Appointment>(a => a.PatientId == patient.Id);
-            patientAppointmentIds = appointments?.Select(a => a.Id).ToHashSet() ?? new HashSet<Guid>();
+            if (patient == null)
+                return Pagination<AppointmentDto.TurnRow>.Empty;
         }
 
-        var turns = await _persistence.GetFiltered<Turn>(t => availabilityIds.Contains(t.AvailabilityId));
+        // 5. Traer los turnos disponibles (NO_SHOW)
+        var turns = await _persistence.GetFiltered<Turn>(t => availabilityIds.Contains(t.AvailabilityId) && t.Status == TurnStatus.NO_SHOW);
+        if (turns == null || !turns.Any())
+            return Pagination<AppointmentDto.TurnRow>.Empty;
+
         var doctorDict = doctors?.ToDictionary(d => d.Id) ?? new Dictionary<Guid, Doctor>();
         var rows = new List<AppointmentDto.TurnRow>();
 
-        if (turns != null)
+        foreach (var turn in turns)
         {
-            foreach (var turn in turns)
-            {
-                if (patientAppointmentIds != null)
-                {
-                    if (!turn.AppointmentId.HasValue) continue;
-                    if (!patientAppointmentIds.Contains(turn.AppointmentId.Value)) continue;
-                }
+            var availability = availabilities.FirstOrDefault(a => a.Id == turn.AvailabilityId);
+            if (availability == null) continue;
 
-                var availability = availabilities.FirstOrDefault(a => a.Id == turn.AvailabilityId);
-                if (availability == null) continue;
+            if (!doctorDict.TryGetValue(availability.DoctorId, out var doctor)) continue;
 
-                doctorDict.TryGetValue(availability.DoctorId, out var doctor);
-                if (doctor == null) continue;
+            var specialityName = doctor.Speciality?.Name ?? string.Empty;
+            var doctorName = doctor.Name ?? string.Empty;
 
-                var specialityName = doctor.Speciality?.Name ?? string.Empty;
-                var doctorName = doctor.Name ?? string.Empty;
-
-                rows.Add(new AppointmentDto.TurnRow(turn.Id, specialityName, doctorName, TimeOnly.FromDateTime(turn.StartTime)));
-            }
+            rows.Add(new AppointmentDto.TurnRow(
+                turn.Id,
+                specialityName,
+                doctorName,
+                TimeOnly.FromDateTime(turn.StartTime)
+            ));
         }
 
         var ordered = rows.OrderBy(r => r.AvailableTime).ToList();
         var total = ordered.Count;
-        if (total == 0) return Pagination<AppointmentDto.TurnRow>.Empty;
+        if (total == 0)
+            return Pagination<AppointmentDto.TurnRow>.Empty;
 
         pageSize = Math.Max(1, pageSize);
         pageIndex = Math.Max(0, pageIndex);
 
         var pageData = ordered.Skip(pageIndex * pageSize).Take(pageSize).ToList();
+
+        // Devolvemos la paginación exactamente igual que tú
         return new Pagination<AppointmentDto.TurnRow>(pageSize, pageIndex, total, pageData);
     }
 }

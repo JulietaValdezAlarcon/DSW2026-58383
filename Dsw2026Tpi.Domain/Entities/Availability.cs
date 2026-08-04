@@ -22,7 +22,7 @@ public class Availability : EntityBase
     #region Constructor for EF
 
 #pragma warning disable CS8618
-    private Availability()
+    public Availability()
     {
     }
 #pragma warning restore CS8618
@@ -30,11 +30,11 @@ public class Availability : EntityBase
     #endregion
 
     public Availability(
-        Guid doctorId,
-        DateOnly date,
-        TimeOnly startTime,
-        TimeOnly endTime,
-        Guid? id = null) : base(id)
+            Guid doctorId,
+            DateOnly date,
+            TimeOnly startTime,
+            TimeOnly endTime,
+            Guid? id = null) : base(id)
     {
         if (doctorId == Guid.Empty)
         {
@@ -49,17 +49,19 @@ public class Availability : EntityBase
                 "La hora de finalización debe ser posterior a la hora de inicio.");
         }
 
+        // ❌ ELIMINAMOS O COMENTAMOS ESTA RESTRICCIÓN PARA QUE ACEPTE RANGOS LARGOS:
+        /*
         if (endTime - startTime != TimeSpan.FromMinutes(30))
         {
-            throw new ArgumentException(
-                "Cada disponibilidad debe representar exactamente 30 minutos.");
+            throw new ArgumentException("Cada disponibilidad debe representar exactamente 30 minutos.");
         }
+        */
 
         DoctorId = doctorId;
         Date = date;
         StartTime = startTime;
         EndTime = endTime;
-        Status = AvailabilityStatus.Available;
+        Status = AvailabilityStatus.Available; // O el estado inicial de la franja
 
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
