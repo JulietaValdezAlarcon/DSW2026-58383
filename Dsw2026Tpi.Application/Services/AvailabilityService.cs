@@ -76,15 +76,49 @@ public class AvailabilityService : IAvailabilityService
                 "La disponibilidad del mes ya fue cargada. Utilizá la actualización para modificarla.");
         }
 
-        var newAvailabilities = BuildSlots(
+        // 1. Creamos las disponibilidades base (rangos maestros)
+        var newAvailabilities = BuildAvailabilityRanges(
             request.DoctorId,
             ranges,
             monthStart,
             monthEnd);
 
-        EnsureSlotsWereGenerated(newAvailabilities);
+        if (newAvailabilities.Count == 0)
+        {
+            throw new ValidationException(
+                "Los horarios indicados no generan disponibilidad para el mes actual",
+                "AVAILABILITY_NO_FUTURE_SLOTS");
+        }
 
         await _persistence.AddRange(newAvailabilities);
+
+        // ==========================================
+        // 📍 AQUÍ ES DONDE VA EL CÓDIGO DE CONTROL:
+        // ==========================================
+        var availabilityIds = newAvailabilities.Select(a => a.Id).ToList();
+        var existingTurnsForDoctor = await _persistence.GetFiltered<Turn>(t => availabilityIds.Contains(t.AvailabilityId));
+        var existingTimes = existingTurnsForDoctor?.Select(t => t.StartTime).ToHashSet() ?? new HashSet<DateTime>();
+
+        var allTurns = new List<Turn>();
+        foreach (var av in newAvailabilities)
+        {
+            var turnsForAv = BuildTurnsForAvailability(av.Id, av.Date, av.StartTime, av.EndTime);
+
+            foreach (var turn in turnsForAv)
+            {
+                if (!existingTimes.Contains(turn.StartTime))
+                {
+                    allTurns.Add(turn);
+                    existingTimes.Add(turn.StartTime);
+                }
+            }
+        }
+
+        if (allTurns.Count > 0)
+        {
+            await _persistence.AddRange(allTurns);
+        }
+        // ==========================================
     }
 
     public async Task Update(AvailabilityModel.Request request)
@@ -105,26 +139,71 @@ public class AvailabilityService : IAvailabilityService
                 "disponibilidad mensual");
         }
 
-        if (currentAvailabilities.Any(
-                availability =>
-                    availability.Status == AvailabilityStatus.Booked))
+        // Verificamos si algún turno de los actuales ya fue reservado
+        var availabilityIds = currentAvailabilities.Select(a => a.Id).ToList();
+        var existingTurns = await _persistence.GetFiltered<Turn>(t => availabilityIds.Contains(t.AvailabilityId));
+
+        if (existingTurns != null && existingTurns.Any(t => t.Status == TurnStatus.BOOKED))
         {
             throw new ConflictException(
                 "AVAILABILITY_HAS_BOOKED_SLOTS",
                 "No se puede reemplazar la disponibilidad porque existen turnos reservados");
         }
 
-        var newAvailabilities = BuildSlots(
+        // Generamos los nuevos rangos maestros de disponibilidad
+        var newAvailabilities = BuildAvailabilityRanges(
             request.DoctorId,
             ranges,
             monthStart,
             monthEnd);
 
-        EnsureSlotsWereGenerated(newAvailabilities);
+        if (newAvailabilities.Count == 0)
+        {
+            throw new ValidationException(
+                "Los horarios indicados no generan disponibilidad para el mes actual",
+                "AVAILABILITY_NO_FUTURE_SLOTS");
+        }
 
+        // Borramos los turnos viejos usando Delete
+        if (existingTurns != null && existingTurns.Any())
+        {
+            foreach (var oldTurn in existingTurns)
+            {
+                await _persistence.Delete(oldTurn);
+            }
+        }
+
+        // Reemplazamos el rango de disponibilidades antiguas por las nuevas
         await _persistence.ReplaceRange(
             currentAvailabilities,
             newAvailabilities);
+
+        // ==========================================
+        // 📍 GENERACIÓN DE NUEVOS TURNOS SIN DUPLICADOS:
+        // ==========================================
+        var newAvailabilityIds = newAvailabilities.Select(a => a.Id).ToList();
+        var existingTimes = new HashSet<DateTime>();
+
+        var allNewTurns = new List<Turn>();
+        foreach (var av in newAvailabilities)
+        {
+            var turnsForAv = BuildTurnsForAvailability(av.Id, av.Date, av.StartTime, av.EndTime);
+
+            foreach (var turn in turnsForAv)
+            {
+                if (!existingTimes.Contains(turn.StartTime))
+                {
+                    allNewTurns.Add(turn);
+                    existingTimes.Add(turn.StartTime);
+                }
+            }
+        }
+
+        if (allNewTurns.Count > 0)
+        {
+            await _persistence.AddRange(allNewTurns);
+        }
+        // ==========================================
     }
 
     private async Task<List<ParsedRange>> ValidateRequest(
@@ -485,4 +564,81 @@ public class AvailabilityService : IAvailabilityService
     }
 
     private sealed record ParsedRange( DayOfWeek DayOfWeek, TimeOnly StartTime, TimeOnly EndTime);
+
+    private static List<Availability> BuildAvailabilityRanges(
+        Guid doctorId,
+        IEnumerable<ParsedRange> ranges,
+        DateOnly monthStart,
+        DateOnly monthEnd)
+    {
+        var availabilities = new List<Availability>();
+        var now = DateTime.Now;
+        var today = DateOnly.FromDateTime(now);
+
+        var currentDate = today > monthStart
+            ? today
+            : monthStart;
+
+        var rangesByDay = ranges
+            .GroupBy(range => range.DayOfWeek)
+            .ToDictionary(
+                group => group.Key,
+                group => group.ToList());
+
+        while (currentDate <= monthEnd)
+        {
+            if (rangesByDay.TryGetValue(
+                    currentDate.DayOfWeek,
+                    out var rangesForDay))
+            {
+                foreach (var range in rangesForDay)
+                {
+                    // Guardamos la franja completa o por tramos que haya definido el médico
+                    availabilities.Add(
+                        new Availability(
+                            doctorId,
+                            currentDate,
+                            range.StartTime,
+                            range.EndTime));
+                }
+            }
+
+            currentDate = currentDate.AddDays(1);
+        }
+
+        return availabilities;
+    }
+
+    private static List<Turn> BuildTurnsForAvailability(
+        Guid availabilityId,
+        DateOnly date,
+        TimeOnly startTime,
+        TimeOnly endTime)
+    {
+        var turns = new List<Turn>();
+        var now = DateTime.Now;
+        var slotStart = startTime;
+
+        while (slotStart < endTime)
+        {
+            var slotEnd = slotStart.AddMinutes(SlotDurationMinutes);
+            var startDateTime = date.ToDateTime(slotStart);
+            var endDateTime = date.ToDateTime(slotEnd);
+
+            // Solo creamos turnos que sean a futuro respecto al momento actual
+            if (startDateTime > now)
+            {
+                turns.Add(
+                    new Turn(
+                        availabilityId,
+                        date,
+                        startDateTime,
+                        endDateTime));
+            }
+
+            slotStart = slotEnd;
+        }
+
+        return turns;
+    }
 }
