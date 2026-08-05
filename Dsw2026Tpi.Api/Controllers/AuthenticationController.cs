@@ -16,6 +16,7 @@ public class AuthenticationController : AppController
     }
 
     [HttpPost("admin/register")]
+    [EnableRateLimiting("GeneralPolicy")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterModel.Request request)

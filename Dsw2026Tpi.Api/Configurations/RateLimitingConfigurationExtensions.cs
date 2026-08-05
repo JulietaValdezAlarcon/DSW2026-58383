@@ -17,20 +17,30 @@ public static class RateLimitingExtensions
 
         services.AddRateLimiter(options =>
         {
-            // 1. Admin Login Policy (5 req / min)[cite: 1]
-            options.AddFixedWindowLimiter("AdminLoginPolicy", opt =>
+            // 1. Admin Login Policy (5 req / min por IP)
+            options.AddPolicy("AdminLoginPolicy", httpContext =>
             {
-                opt.PermitLimit = adminLimit;
-                opt.Window = TimeSpan.FromMinutes(1);
-                opt.QueueLimit = 0; // No encolar[cite: 1]
+                string clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ =>
+                    new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = adminLimit,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    });
             });
 
-            // 2. Patient Login Policy (10 req / min)[cite: 1]
-            options.AddFixedWindowLimiter("PatientLoginPolicy", opt =>
+            // 2. Patient Login Policy (10 req / min por IP)
+            options.AddPolicy("PatientLoginPolicy", httpContext =>
             {
-                opt.PermitLimit = patientLimit;
-                opt.Window = TimeSpan.FromMinutes(1);
-                opt.QueueLimit = 0;
+                string clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ =>
+                    new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = patientLimit,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    });
             });
 
             // 3. Appointment Policy (5 req / min por paciente)[cite: 1]
